@@ -9,20 +9,20 @@ abstract class Failure extends Equatable {
   List<Object> get props => [properties];
 }
 
-class FirebaseAuthFailure extends Failure {
-  final String error;
-
-  const FirebaseAuthFailure({required this.error});
-}
-
-class FirebaseOperationFailure extends Failure {
-  final String error;
-
-  const FirebaseOperationFailure({required this.error});
-}
-
 class NoInternetFailure extends Failure {
+  final String message;
+
+  const NoInternetFailure({required this.message});
+}
+
+class FirebaseFailure extends Failure {
+  final String message;
+
+  const FirebaseFailure({required this.message});
+}
+
+class InternalFailure extends Failure {
   final String error;
 
-  const NoInternetFailure({required this.error});
+  const InternalFailure({required this.error});
 }
