@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "254331795365",
+    "project_id": "talk-hub-demo",
+    "storage_bucket": "talk-hub-demo.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:254331795365:android:a816c0df333f6d65dada4c",
+        "android_client_info": {
+          "package_name": "com.example.talk_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDs3JkXBDwTCDItTlLS-ASiMwTXCmVs2k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
