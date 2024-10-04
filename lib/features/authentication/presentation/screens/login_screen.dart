@@ -1,6 +1,10 @@
+import 'dart:developer';
+
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:talk_hub/core/injection/injection_container.dart';
+import 'package:talk_hub/features/authentication/domain/use_cases/save_user.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/forgot_password_screen.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/user_profile_screen.dart';
 import 'package:talk_hub/features/authentication/presentation/widgets/decorations.dart';
@@ -13,6 +17,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SignInScreen(
+        showAuthActionSwitch: true,
         actions: [
           ForgotPasswordAction((context, email) {
             context.push(
@@ -35,7 +40,19 @@ class LoginScreen extends StatelessWidget {
             }
           }),*/
           AuthStateChangeAction<SignedIn>((context, state) {
+            log('signed in user: ${state.user}');
+            // saving user info to database
+            getIt<SaveUser>()(params: state.user!);
             context.push(UserProfileScreen.path);
+          }),
+          AuthStateChangeAction<UserCreated>((context, state) {
+            log('User created.');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account created successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
           })
         ],
         styles: const {

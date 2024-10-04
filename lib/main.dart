@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:talk_hub/config/firebase_options.dart';
 import 'package:talk_hub/config/routes/router_manager.dart';
 import 'package:talk_hub/config/theme/theme.dart';
+import 'package:talk_hub/core/injection/injection_container.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,7 @@ void main() async {
   FirebaseUIAuth.configureProviders([
     EmailAuthProvider(),
   ]);
+  await di.init();
   runApp(const MyApp());
 }
 
