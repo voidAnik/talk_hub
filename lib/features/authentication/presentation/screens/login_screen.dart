@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:talk_hub/core/injection/injection_container.dart';
 import 'package:talk_hub/features/authentication/domain/use_cases/save_user.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/forgot_password_screen.dart';
-import 'package:talk_hub/features/authentication/presentation/screens/user_profile_screen.dart';
 import 'package:talk_hub/features/authentication/presentation/widgets/decorations.dart';
+import 'package:talk_hub/features/home/presentation/screens/home_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   static const String path = '/login_screen';
@@ -43,7 +43,7 @@ class LoginScreen extends StatelessWidget {
             log('signed in user: ${state.user}');
             // saving user info to database
             getIt<SaveUser>()(params: state.user!);
-            context.push(UserProfileScreen.path);
+            context.push(HomeScreen.path);
           }),
           AuthStateChangeAction<UserCreated>((context, state) {
             log('User created.');

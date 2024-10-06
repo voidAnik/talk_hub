@@ -51,8 +51,8 @@ class UserModel {
       email: json["email"],
       photoUrl: json["photoUrl"],
       uid: json["uid"],
-      isEmailVerified: json["isEmailVerified"].toLowerCase() == 'true',
-      isOnline: json["isOnline"].toLowerCase() == 'true',
+      isEmailVerified: json["isEmailVerified"],
+      isOnline: json["isOnline"],
     );
   }
 

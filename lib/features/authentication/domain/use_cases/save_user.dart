@@ -10,7 +10,7 @@ class SaveUser extends UseCase<void, User> {
   SaveUser(this._repository);
 
   @override
-  Future<Either<Failure, void>?> call({required User params}) {
+  Future<Either<Failure, void>> call({required User params}) {
     return _repository.saveUser(user: params);
   }
 }
