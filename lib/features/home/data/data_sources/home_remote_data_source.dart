@@ -9,6 +9,7 @@ import 'package:talk_hub/features/home/data/models/room_model.dart';
 abstract class HomeRemoteDataSource {
   Future<List<RoomModel>> fetchRooms();
   Future<List<UserModel>> fetchUsers();
+  Stream<String> listenIncomingCall();
 }
 
 class HomeRemoteDataSourceImpl extends HomeRemoteDataSource {
@@ -42,6 +43,32 @@ class HomeRemoteDataSourceImpl extends HomeRemoteDataSource {
     } catch (error) {
       log('Error fetching users: $error');
       throw FirebaseOperationException(message: error.toString());
+    }
+  }
+
+  @override
+  Stream<String> listenIncomingCall() async* {
+    await for (var snapshot in _firestore
+        .collection('calls')
+        .where('receiverId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+        .where('callStatus', isEqualTo: 'ringing')
+        .snapshots()) {
+      for (var docChange in snapshot.docChanges) {
+        if (docChange.type == DocumentChangeType.added) {
+          final data = docChange.doc.data();
+
+          if (data != null) {
+            // Handle the incoming call here
+            String callerId = data['callerId'];
+            String callType = data['callType'];
+            String callId = docChange.doc.id; // Unique call ID
+
+            log('Incoming call from: $callerId, Call Type: $callType');
+
+            yield callId;
+          }
+        }
+      }
     }
   }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:talk_hub/core/extensions/context_extension.dart';
 import 'package:talk_hub/core/injection/injection_container.dart';
 import 'package:talk_hub/core/widgets/error_widget.dart';
 import 'package:talk_hub/features/authentication/data/models/user_model.dart';
 import 'package:talk_hub/features/home/presentation/blocs/data_state.dart';
 import 'package:talk_hub/features/home/presentation/blocs/get_users_cubit.dart';
+import 'package:talk_hub/features/hub/presentation/screens/call_screen.dart';
 
 class UserList extends StatelessWidget {
   const UserList({super.key});
@@ -28,7 +30,11 @@ class UserList extends StatelessWidget {
                 itemCount: users.length,
                 itemBuilder: (context, index) {
                   final user = users[index];
-                  return _createListTile(user, context);
+                  return GestureDetector(
+                      onTap: () {
+                        context.push(CallScreen.path, extra: user);
+                      },
+                      child: _createListTile(user, context));
                 },
               );
             } else if (state is DataError) {

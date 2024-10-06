@@ -34,4 +34,17 @@ class HomeRepositoryImpl extends HomeRepository {
       return Left(InternalFailure(error: e.toString()));
     }
   }
+
+  @override
+  Stream<Either<Failure, String>> listenIncomingCall() async* {
+    try {
+      await for (var callId in _remoteDataSource.listenIncomingCall()) {
+        yield Right(callId);
+      }
+    } on FirebaseOperationException catch (e) {
+      yield Left(FirebaseFailure(message: e.message));
+    } catch (e) {
+      yield Left(InternalFailure(error: e.toString()));
+    }
+  }
 }

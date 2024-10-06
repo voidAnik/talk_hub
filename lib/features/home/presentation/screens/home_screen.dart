@@ -1,12 +1,17 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:talk_hub/core/constants/strings.dart';
 import 'package:talk_hub/core/extensions/context_extension.dart';
+import 'package:talk_hub/core/injection/injection_container.dart';
 import 'package:talk_hub/features/authentication/data/models/user_model.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/user_profile_screen.dart';
 import 'package:talk_hub/features/home/data/models/room_model.dart';
+import 'package:talk_hub/features/home/presentation/blocs/incoming_call_cubit.dart';
 import 'package:talk_hub/features/home/presentation/widgets/room_grid_widget.dart';
 import 'package:talk_hub/features/home/presentation/widgets/user_list_widget.dart';
 
@@ -45,25 +50,36 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Text(
-            AppStrings.title,
-            style: GoogleFonts.aldrich(color: Colors.white),
+    return BlocProvider(
+      create: (context) =>
+          getIt<IncomingCallCubit>()..startListeningForIncomingCalls(),
+      child: BlocListener<IncomingCallCubit, String?>(
+        listener: (context, callId) {
+          if (callId != null) {
+            log('incoming call...... $callId');
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(
+                AppStrings.title,
+                style: GoogleFonts.aldrich(color: Colors.white),
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                    onPressed: () => context.push(UserProfileScreen.path),
+                    icon: const Icon(FontAwesomeIcons.user)),
+              )
+            ],
           ),
+          body: _createBody(context),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-                onPressed: () => context.push(UserProfileScreen.path),
-                icon: const Icon(FontAwesomeIcons.user)),
-          )
-        ],
       ),
-      body: _createBody(context),
     );
   }
 

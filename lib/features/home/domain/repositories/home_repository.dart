@@ -6,4 +6,5 @@ import 'package:talk_hub/features/home/data/models/room_model.dart';
 abstract class HomeRepository {
   Future<Either<Failure, List<RoomModel>>> getRooms();
   Future<Either<Failure, List<UserModel>>> getUsers();
+  Stream<Either<Failure, String>> listenIncomingCall();
 }
