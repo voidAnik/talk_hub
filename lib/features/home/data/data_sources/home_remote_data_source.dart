@@ -3,13 +3,16 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:talk_hub/core/error/exceptions.dart';
+import 'package:talk_hub/core/web_rtc/firebase_constants.dart';
 import 'package:talk_hub/features/authentication/data/models/user_model.dart';
 import 'package:talk_hub/features/home/data/models/room_model.dart';
+import 'package:talk_hub/features/hub/data/models/incoming_call.dart';
 
 abstract class HomeRemoteDataSource {
   Future<List<RoomModel>> fetchRooms();
   Future<List<UserModel>> fetchUsers();
   Stream<String> listenIncomingCall();
+  Future<IncomingCall> getCallerInfo(String callId);
 }
 
 class HomeRemoteDataSourceImpl extends HomeRemoteDataSource {
@@ -69,6 +72,42 @@ class HomeRemoteDataSourceImpl extends HomeRemoteDataSource {
           }
         }
       }
+    }
+  }
+
+  @override
+  Future<IncomingCall> getCallerInfo(String callId) async {
+    try {
+      final callDoc = await _firestore.collection('calls').doc(callId).get();
+
+      if (!callDoc.exists) {
+        throw FirebaseOperationException(message: 'Call not found');
+      }
+
+      final data = callDoc.data();
+      if (data == null) {
+        throw FirebaseOperationException(message: 'Call data is null');
+      }
+
+      final callerId = data['callerId'] as String;
+
+      final userDoc = await _firestore.collection('users').doc(callerId).get();
+
+      if (!userDoc.exists) {
+        throw FirebaseOperationException(message: 'Caller not found');
+      }
+
+      final userData = userDoc.data();
+      if (userData == null) {
+        throw FirebaseOperationException(message: 'Caller data is null');
+      }
+
+      return IncomingCall(
+          user: UserModel.fromMap(userData),
+          callType: data[FirebaseConst.callTypeField],
+          callId: callId);
+    } catch (error) {
+      throw FirebaseOperationException(message: error.toString());
     }
   }
 }

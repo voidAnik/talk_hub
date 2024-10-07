@@ -22,13 +22,16 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      routerConfig: RouterManager.config,
-      title: 'Talk Hub',
-      themeMode: ThemeMode.system,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        routerConfig: RouterManager.config,
+        title: 'Talk Hub',
+        themeMode: ThemeMode.light,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+      ),
     );
   }
 }

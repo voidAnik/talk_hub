@@ -5,6 +5,7 @@ import 'package:talk_hub/features/authentication/data/models/user_model.dart';
 import 'package:talk_hub/features/home/data/data_sources/home_remote_data_source.dart';
 import 'package:talk_hub/features/home/data/models/room_model.dart';
 import 'package:talk_hub/features/home/domain/repositories/home_repository.dart';
+import 'package:talk_hub/features/hub/data/models/incoming_call.dart';
 
 class HomeRepositoryImpl extends HomeRepository {
   final HomeRemoteDataSource _remoteDataSource;
@@ -45,6 +46,19 @@ class HomeRepositoryImpl extends HomeRepository {
       yield Left(FirebaseFailure(message: e.message));
     } catch (e) {
       yield Left(InternalFailure(error: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, IncomingCall>> getCallerInfo(
+      {required String callId}) async {
+    try {
+      final incomingCallInfo = await _remoteDataSource.getCallerInfo(callId);
+      return Right(incomingCallInfo);
+    } on FirebaseOperationException catch (e) {
+      return Left(FirebaseFailure(message: e.message));
+    } catch (e) {
+      return Left(InternalFailure(error: e.toString()));
     }
   }
 }

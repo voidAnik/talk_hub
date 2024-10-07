@@ -14,6 +14,8 @@ import 'package:talk_hub/features/home/domain/use_cases/get_rooms.dart';
 import 'package:talk_hub/features/home/domain/use_cases/get_users.dart';
 import 'package:talk_hub/features/home/presentation/blocs/get_rooms_cubit.dart';
 import 'package:talk_hub/features/home/presentation/blocs/get_users_cubit.dart';
+import 'package:talk_hub/features/home/presentation/blocs/incoming_call_cubit.dart';
+import 'package:talk_hub/features/hub/presentation/blocs/mute_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -47,5 +49,7 @@ Future<void> init() async {
   //* Blocs
   getIt
     ..registerFactory(() => GetUsersCubit(getIt()))
-    ..registerFactory(() => GetRoomsCubit(getIt()));
+    ..registerFactory(() => GetRoomsCubit(getIt()))
+    ..registerFactory(() => IncomingCallCubit(getIt()))
+    ..registerFactory(() => MuteCubit());
 }

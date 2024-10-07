@@ -7,7 +7,7 @@ import 'package:talk_hub/core/widgets/error_widget.dart';
 import 'package:talk_hub/features/authentication/data/models/user_model.dart';
 import 'package:talk_hub/features/home/presentation/blocs/data_state.dart';
 import 'package:talk_hub/features/home/presentation/blocs/get_users_cubit.dart';
-import 'package:talk_hub/features/hub/presentation/screens/call_screen.dart';
+import 'package:talk_hub/features/hub/presentation/screens/audio_call_screen.dart';
 
 class UserList extends StatelessWidget {
   const UserList({super.key});
@@ -32,7 +32,8 @@ class UserList extends StatelessWidget {
                   final user = users[index];
                   return GestureDetector(
                       onTap: () {
-                        context.push(CallScreen.path, extra: user);
+                        //context.push(VideoCallScreen.path, extra: user);
+                        context.push(AudioCallScreen.path, extra: user);
                       },
                       child: _createListTile(user, context));
                 },

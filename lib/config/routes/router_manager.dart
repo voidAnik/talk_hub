@@ -5,7 +5,8 @@ import 'package:talk_hub/features/authentication/presentation/screens/forgot_pas
 import 'package:talk_hub/features/authentication/presentation/screens/login_screen.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/user_profile_screen.dart';
 import 'package:talk_hub/features/home/presentation/screens/home_screen.dart';
-import 'package:talk_hub/features/hub/presentation/screens/call_screen.dart';
+import 'package:talk_hub/features/hub/presentation/screens/audio_call_screen.dart';
+import 'package:talk_hub/features/hub/presentation/screens/video_call_screen.dart';
 import 'package:talk_hub/features/splash/presentation/splash_screen.dart';
 
 class RouterManager {
@@ -38,9 +39,26 @@ class RouterManager {
           builder: (context, state) => HomeScreen(),
         ),
         GoRoute(
-          path: CallScreen.path,
-          builder: (context, state) =>
-              CallScreen(user: state.extra as UserModel),
+          path: VideoCallScreen.path,
+          builder: (context, state) => VideoCallScreen(
+            user: state.extra is UserModel ? state.extra as UserModel : null,
+            callId: state.extra is String ? state.extra as String : null,
+          ),
         ),
+        GoRoute(
+            path: AudioCallScreen.path,
+            builder: (context, state) {
+              if (state.extra is (UserModel, String)) {
+                final value = state.extra as (UserModel, String);
+                return AudioCallScreen(
+                  user: value.$1,
+                  callId: value.$2,
+                );
+              } else {
+                return AudioCallScreen(
+                  user: state.extra as UserModel,
+                );
+              }
+            }),
       ]);
 }

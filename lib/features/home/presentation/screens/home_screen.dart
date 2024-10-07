@@ -5,48 +5,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:talk_hub/config/theme/colors.dart';
 import 'package:talk_hub/core/constants/strings.dart';
 import 'package:talk_hub/core/extensions/context_extension.dart';
 import 'package:talk_hub/core/injection/injection_container.dart';
-import 'package:talk_hub/features/authentication/data/models/user_model.dart';
+import 'package:talk_hub/core/web_rtc/enums.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/user_profile_screen.dart';
-import 'package:talk_hub/features/home/data/models/room_model.dart';
 import 'package:talk_hub/features/home/presentation/blocs/incoming_call_cubit.dart';
 import 'package:talk_hub/features/home/presentation/widgets/room_grid_widget.dart';
 import 'package:talk_hub/features/home/presentation/widgets/user_list_widget.dart';
+import 'package:talk_hub/features/hub/presentation/screens/audio_call_screen.dart';
+import 'package:talk_hub/features/hub/presentation/screens/video_call_screen.dart';
+import 'package:talk_hub/features/hub/presentation/widgets/incoming_call_dialogue.dart';
 
 class HomeScreen extends StatelessWidget {
   static const String path = '/home_screen';
 
-  // Mock Data for Rooms
-  final List<RoomModel> mockRooms = [
-    RoomModel(id: 'room1', name: 'Room 1', description: 'General Discussion'),
-    RoomModel(id: 'room2', name: 'Room 2', description: 'Flutter Development'),
-    RoomModel(id: 'room3', name: 'Room 3', description: 'WebRTC Testing'),
-  ];
-
-// Mock Data for Users
-  final List<UserModel> mockUsers = [
-    UserModel(
-      name: 'Alice Johnson',
-      email: 'alice@example.com',
-      photoUrl: 'https://randomuser.me/api/portraits/women/1.jpg',
-      uid: 'user1',
-      isEmailVerified: true,
-      isOnline: true,
-    ),
-    UserModel(
-      name: 'Bob Smith',
-      email: 'bob@example.com',
-      photoUrl: 'https://randomuser.me/api/portraits/men/1.jpg',
-      uid: 'user2',
-      isEmailVerified: true,
-      isOnline: false,
-    ),
-    // Add more users...
-  ];
-
-  HomeScreen({super.key});
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +32,7 @@ class HomeScreen extends StatelessWidget {
         listener: (context, callId) {
           if (callId != null) {
             log('incoming call...... $callId');
+            _showIncomingCallDialog(context, callId);
           }
         },
         child: Scaffold(
@@ -65,7 +41,7 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.only(left: 8.0),
               child: Text(
                 AppStrings.title,
-                style: GoogleFonts.aldrich(color: Colors.white),
+                style: GoogleFonts.aldrich(color: primaryColor),
               ),
             ),
             actions: [
@@ -107,5 +83,37 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showIncomingCallDialog(BuildContext context, String callId) async {
+    await context
+        .read<IncomingCallCubit>()
+        .getCallerInfo(callId)
+        .then((callInfo) {
+      log('callerInfo: $callInfo');
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return IncomingCallDialog(
+            caller: callInfo?.user,
+            onAccept: () {
+              Navigator.of(context).pop();
+              log('Call accepted');
+              if (callInfo?.callType == MediaType.video.name) {
+                context.push(VideoCallScreen.path, extra: callId);
+              } else {
+                context.push(AudioCallScreen.path,
+                    extra: (callInfo?.user, callId));
+              }
+            },
+            onDecline: () {
+              Navigator.of(context).pop();
+              log('Call declined');
+            },
+          );
+        },
+      );
+    });
   }
 }

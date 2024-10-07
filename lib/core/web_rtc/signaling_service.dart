@@ -1,8 +1,16 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:talk_hub/core/web_rtc/enums.dart';
+import 'package:talk_hub/core/web_rtc/firebase_constants.dart';
+
+typedef StreamTrackCallback = void Function(MediaStream stream);
+typedef ErrorCallback = void Function(String error);
+typedef PeerCallback = void Function();
 
 class Signaling {
-  FirebaseFirestore db = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Map<String, dynamic> _configurationServer = {
     'iceServers': [
       {
@@ -25,26 +33,27 @@ class Signaling {
 
   late RTCPeerConnection _rtcPeerConnection;
   late MediaStream _localStream;
-  late Function(MediaStream stream) onLocalStream;
-  late Function(MediaStream stream) onAddRemoteStream;
-  late Function() onRemoveRemoteStream;
-  late Function() onDisconnect;
+  late StreamTrackCallback onAddLocalStream, onAddRemoteStream;
+  late PeerCallback onRemoveRemoteStream, onDisconnect;
+  String? callId;
+
+  MediaType mediaType;
+
+  Signaling(this.mediaType);
 
   // This function initiates the call
-  Future<void> initiateCall(
-      String callerId, String receiverId, String callType) async {
+  Future<void> initiateCall(String callerId, String receiverId) async {
     // Create a new call document in Firestore
-    DocumentReference callRef = db.collection('calls').doc();
+    DocumentReference callRef =
+        _firestore.collection(FirebaseConst.callsCollection).doc();
+    callId = callRef.id;
 
     // Get local media stream (audio and video)
-    _localStream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': {
-        'facingMode': 'user',
-      },
-    });
+    _localStream = await _getUserMedia();
 
-    onLocalStream.call(_localStream);
+    if (mediaType == MediaType.video) {
+      onAddLocalStream(_localStream);
+    }
 
     _rtcPeerConnection = await createPeerConnection(_configurationServer);
     registerPeerConnectionListeners();
@@ -57,12 +66,14 @@ class Signaling {
     // Collect ICE candidates
     _rtcPeerConnection.onIceCandidate = (RTCIceCandidate candidate) {
       if (candidate == null) {
-        print('Got final candidate!');
+        log('Got final candidate!');
         return;
       }
       final candidateMap = candidate.toMap();
-      print('Got candidate: $candidateMap');
-      callRef.collection('callerCandidates').add(candidateMap);
+      log('Got candidate: $candidateMap');
+      callRef
+          .collection(FirebaseConst.callerCandidatesCollection)
+          .add(candidateMap);
     };
 
     // Create an SDP offer
@@ -71,11 +82,11 @@ class Signaling {
 
     // Store offer information in the call document
     await callRef.set({
-      'offer': offer.toMap(),
-      'callerId': callerId,
-      'receiverId': receiverId,
-      'callStatus': 'ringing',
-      'callType': callType,
+      FirebaseConst.offerField: offer.toMap(),
+      FirebaseConst.callerIdField: callerId,
+      FirebaseConst.receiverIdField: receiverId,
+      FirebaseConst.callStatusField: CallStatus.ringing.name,
+      FirebaseConst.callTypeField: mediaType.name,
     });
 
     // Listen for remote SDP answer
@@ -91,7 +102,10 @@ class Signaling {
     });
 
     // Listen for remote ICE candidates
-    callRef.collection('calleeCandidates').snapshots().listen((snapshot) {
+    callRef
+        .collection(FirebaseConst.calleeCandidatesCollection)
+        .snapshots()
+        .listen((snapshot) {
       snapshot.docChanges.forEach((change) async {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data();
@@ -106,24 +120,24 @@ class Signaling {
 
     // Add onTrack event listener
     _rtcPeerConnection.onTrack = (RTCTrackEvent event) {
-      onAddRemoteStream.call(event.streams[0]);
-      print('Got remote track: ${event.streams[0]}');
+      if (event.track.kind == 'video') {
+        onAddRemoteStream.call(event.streams[0]);
+        log('Got remote track: ${event.streams[0]}');
+      }
     };
   }
 
   // Function for the receiver to answer the call
   Future<void> answerCall(String callId) async {
-    final callRef = db.collection('calls').doc(callId);
+    final callRef = _firestore.collection('calls').doc(callId);
     final callSnapshot = await callRef.get();
 
     if (callSnapshot.exists) {
-      _localStream = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
-        'video': {
-          'facingMode': 'user',
-        },
-      });
-      onLocalStream.call(_localStream);
+      _localStream = await _getUserMedia();
+
+      if (mediaType == MediaType.video) {
+        onAddLocalStream(_localStream);
+      }
 
       _rtcPeerConnection = await createPeerConnection(_configurationServer);
       registerPeerConnectionListeners();
@@ -133,8 +147,16 @@ class Signaling {
         _rtcPeerConnection.addTrack(track, _localStream);
       });
 
+      // Add onTrack event listener for remote stream
+      _rtcPeerConnection.onTrack = (RTCTrackEvent event) {
+        if (event.track.kind == 'video') {
+          onAddRemoteStream.call(event.streams[0]);
+          log('Got remote track: ${event.streams[0]}');
+        }
+      };
+
       // Handle the offer from the caller
-      final offer = callSnapshot.data()?['offer'];
+      final offer = callSnapshot.data()?[FirebaseConst.offerField];
       await _rtcPeerConnection.setRemoteDescription(
         RTCSessionDescription(offer['sdp'], offer['type']),
       );
@@ -145,12 +167,15 @@ class Signaling {
 
       // Update the call document with the answer
       await callRef.update({
-        'answer': answer.toMap(),
-        'callStatus': 'answered',
+        FirebaseConst.answerField: answer.toMap(),
+        FirebaseConst.callStatusField: CallStatus.answered.name,
       });
 
       // Listen for remote ICE candidates
-      callRef.collection('callerCandidates').snapshots().listen((snapshot) {
+      callRef
+          .collection(FirebaseConst.callerCandidatesCollection)
+          .snapshots()
+          .listen((snapshot) {
         snapshot.docChanges.forEach((change) async {
           if (change.type == DocumentChangeType.added) {
             final data = change.doc.data();
@@ -162,12 +187,6 @@ class Signaling {
           }
         });
       });
-
-      // Add onTrack event listener for remote stream
-      _rtcPeerConnection.onTrack = (RTCTrackEvent event) {
-        onAddRemoteStream.call(event.streams[0]);
-        print('Got remote track: ${event.streams[0]}');
-      };
     }
   }
 
@@ -185,7 +204,9 @@ class Signaling {
       track.stop();
     });
 
-    onRemoveRemoteStream();
+    if (mediaType == MediaType.video) {
+      onRemoveRemoteStream();
+    }
 
     if (_rtcPeerConnection != null) {
       _rtcPeerConnection.close();
@@ -193,17 +214,20 @@ class Signaling {
 
     // Delete call document from Firestore
     if (callId.isNotEmpty) {
-      await db.collection('calls').doc(callId).delete();
+      await _firestore
+          .collection(FirebaseConst.callsCollection)
+          .doc(callId)
+          .delete();
     }
   }
 
   void registerPeerConnectionListeners() {
     _rtcPeerConnection.onIceGatheringState = (RTCIceGatheringState state) {
-      print('ICE gathering state changed: $state');
+      log('ICE gathering state changed: $state');
     };
 
     _rtcPeerConnection.onConnectionState = (RTCPeerConnectionState state) {
-      print('Connection state change: $state');
+      log('Connection state change: $state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         _localStream.getTracks().forEach((track) {
           track.stop();
@@ -220,11 +244,27 @@ class Signaling {
     };
 
     _rtcPeerConnection.onSignalingState = (RTCSignalingState state) {
-      print('Signaling state change: $state');
+      log('Signaling state change: $state');
     };
 
     _rtcPeerConnection.onIceConnectionState = (RTCIceConnectionState state) {
-      print('ICE connection state change: $state');
+      log('ICE connection state change: $state');
     };
+  }
+
+  Future<MediaStream> _getUserMedia() async {
+    if (mediaType == MediaType.video) {
+      return await navigator.mediaDevices.getUserMedia({
+        'audio': true,
+        'video': {
+          'facingMode': 'user',
+        },
+      });
+    } else {
+      return await navigator.mediaDevices.getUserMedia({
+        'audio': true,
+        'video': false,
+      });
+    }
   }
 }

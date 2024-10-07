@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:talk_hub/config/theme/colors.dart';
 import 'package:talk_hub/core/constants/assets.dart';
 import 'package:talk_hub/core/extensions/context_extension.dart';
 import 'package:talk_hub/features/authentication/presentation/screens/login_screen.dart';
@@ -44,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Text(
               'Talk Hub',
               style: GoogleFonts.aldrich(
-                  fontSize: context.width * 0.05, color: Colors.white),
+                  fontSize: context.width * 0.05, color: primaryColor),
             ),
           ],
         ),
